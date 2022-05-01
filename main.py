@@ -14,6 +14,9 @@ def main():
         # puzzle should be a tuple of lists - tuple is ordered and immutable, but list is ordered and mutable
         # the rows should be immutable, but we should be allowed to modify the elements within each row
         puzzle = ([1, 2, 0], [4, 5, 3], [7, 8, 6])
+        puzzle_1 = ([1, 2, 3], [4, 5, 6], [7, 0, 8])
+        puzzle_2 = ([0, 1, 2], [4, 5, 3], [7, 8, 6])
+        puzzle_3 = ([8, 7, 1], [6, 0, 2], [5, 4, 3])
     elif custom_puzzle == '2':
         print('Enter your puzzle, use a zero to represent the blank')
         print('Enter the first row, use a space between numbers')
@@ -28,24 +31,24 @@ def main():
         puzzle = ([1, 2, 0], [4, 5, 3], [7, 8, 6])
 
     print('\nHere is the puzzle:')
-    print(puzzle)
+    print(puzzle_3)
     print('\nEnter the number of your choice of algorithm:')
     print('(1) Uniform Cost Search')
     print('(2) A* with the Misplaced Tile Heuristic')
     print('(3) A* with the Euclidean Distance Heuristic')
     algo = input()
     if algo == '1':
-        heuristic = ucs(puzzle)
+        heuristic = ucs(puzzle_3)
     elif algo == '2':
-        heuristic = a_star_mth(puzzle)
+        heuristic = a_star_mth(puzzle_3)
     elif algo == '3':
-        heuristic = a_star_edh(puzzle)
+        heuristic = a_star_edh(puzzle_3)
     else:
         print('Invalid input. Using A* with the Euclidean Distance Heuristic')
         heuristic = a_star_edh(puzzle)
 
     start_time = time.time()
-    search(puzzle, heuristic, algo)
+    search(puzzle_3, heuristic, algo)
     end_time = time.time()
     print('Search took ', end_time - start_time, ' seconds')
 
@@ -92,11 +95,13 @@ def search(puzzle, heuristic, algo):
 
         # check for goal state after a node has been removed from the frontier
         if node.puzzle == goal_state:
-            print('Goal!!!\n\nTo solve this problem, the search algorithm expanded a total of ' + str(nodes_expanded) +
-                  'nodes.\nThe maximum number of nodes in the queue at any one time: ' + str(max_frontier_size) +
-                  '.\nThe depth of the goal node was ' + str(node.depth) + '.')
+            print('\nGoal!!!\n\nTo solve this problem, the search algorithm expanded a total of ' +
+                  str(nodes_expanded) + ' nodes.\nThe maximum number of nodes in the queue at any one time: ' +
+                  str(max_frontier_size) + '.\nThe depth of the goal node was: ' + str(node.depth) + '.\n')
+            print('Final puzzle state: ', node.puzzle)
+            return
 
-        print('The best state to expand with g(n) = ' + str(node.depth) + ' and h(n) = ' +
+        print('\nThe best state to expand with g(n) = ' + str(node.depth) + ' and h(n) = ' +
               str(node.hn) + ' is...\n' + str(node.puzzle) + '\tExpanding this node...')
 
         expanded_parent = expand_nodes(node, expanded)
@@ -105,7 +110,7 @@ def search(puzzle, heuristic, algo):
 
         for child in children:
             if child is not None:
-                child.depth += 1
+                child.depth = node.depth + 1
                 if algo == '1':
                     child.hn = ucs(child.puzzle)
                 # misplaced tile heuristic
@@ -123,64 +128,64 @@ def search(puzzle, heuristic, algo):
 
 
 def expand_nodes(node, expanded):
-    row_index = -1
-    col_index = -1
+    row_index = 0
+    col_index = 0
     # find position of the blank
     for row in range(len(node.puzzle)):
         for col in range(len(node.puzzle)):
-            if node.puzzle[row][col] == '0':
+            if node.puzzle[row][col] == 0:
                 row_index = row
                 col_index = col
 
     if row_index > 0:
         up_child = deepcopy(node.puzzle)
         # swapping the 0 with the puzzle piece directly above it
+        '''
         swap = up_child[row_index][col_index]
         up_child[row_index][col_index] = up_child[row_index - 1][col_index]
         up_child[row_index - 1][col_index] = swap
         '''
         up_child[row_index][col_index] = up_child[row_index - 1][col_index]
-        up_child[row_index - 1][col_index] = 0 # maybe '0'?
-        '''
+        up_child[row_index - 1][col_index] = 0
         if up_child not in expanded:
             node.move_up = Problem(up_child)
 
     if row_index < len(node.puzzle) - 1:
         down_child = deepcopy(node.puzzle)
         # swapping the 0 with the puzzle piece directly above it
+        '''
         swap = down_child[row_index][col_index]
         down_child[row_index][col_index] = down_child[row_index + 1][col_index]
         down_child[row_index + 1][col_index] = swap
         '''
-        up_child[row_index][col_index] = up_child[row_index + 1][col_index]
-        up_child[row_index + 1][col_index] = 0 # maybe '0'?
-        '''
+        down_child[row_index][col_index] = down_child[row_index + 1][col_index]
+        down_child[row_index + 1][col_index] = 0
         if down_child not in expanded:
             node.move_down = Problem(down_child)
 
     if col_index > 0:
         left_child = deepcopy(node.puzzle)
         # swapping the 0 with the puzzle piece directly above it
+        '''
         swap = left_child[row_index][col_index]
         left_child[row_index][col_index] = left_child[row_index][col_index - 1]
         left_child[row_index][col_index - 1] = swap
         '''
         left_child[row_index][col_index] = left_child[row_index][col_index - 1]
-        left_child[row_index][col_index - 1] = 0 # maybe '0'?
-        '''
+        left_child[row_index][col_index - 1] = 0
         if left_child not in expanded:
             node.move_left = Problem(left_child)
 
     if col_index < len(node.puzzle) - 1:
         right_child = deepcopy(node.puzzle)
         # swapping the 0 with the puzzle piece directly above it
+        '''
         swap = right_child[row_index][col_index]
         right_child[row_index][col_index] = right_child[row_index][col_index + 1]
         right_child[row_index][col_index + 1] = swap
         '''
         right_child[row_index][col_index] = right_child[row_index][col_index + 1]
-        right_child[row_index][col_index + 1] = 0 # maybe '0'?
-        '''
+        right_child[row_index][col_index + 1] = 0
         if right_child not in expanded:
             node.move_right = Problem(right_child)
 

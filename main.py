@@ -1,4 +1,8 @@
 import os
+import copy
+import queue
+import time
+import math
 
 
 def main():
@@ -30,14 +34,20 @@ def main():
     print('(3) A* with the Euclidean Distance Heuristic')
     algo = input()
     if algo == '1':
-        ucs(puzzle)
+        heuristic = ucs(puzzle)
     elif algo == '2':
-        a_star_mth(puzzle)
+        heuristic = a_star_mth(puzzle)
     elif algo == '3':
-        a_star_edh(puzzle)
+        heuristic = a_star_edh(puzzle)
     else:
         print('Invalid input. Using A* with the Euclidean Distance Heuristic')
-        a_star_edh(puzzle)
+        heuristic = a_star_edh(puzzle)
+
+    # print(heuristic)
+    search_results = search(puzzle, heuristic)
+
+    if search_results:
+        print()
 
 
 # pseudo code
@@ -55,19 +65,69 @@ function graphSearch(problem) returns a solution, or failure
 """
 
 
-def ucs(problem):
-    # might change these functions
-    goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
+def search(puzzle, heuristic):
+    # pseudocode
+    if (problem.puzzle == goal_state):
+        # maybe instead of a bool, we return some kind of object containing number of nodes expanded, max number of
+        # nodes in the queue, and the depth of the goal state
+        return True
+    return False
 
 
-def a_star_mth(problem):
-    # might change these functions
-    goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
+class Problem:
+    def __init__(self, puzzle):
+        self.puzzle = puzzle
+        self.expanded = False
+        self.parent = None
+        self.mvup = None
+        self.mvdwn = None
+        self.mvlft = None
+        self.mvrht = None
+        self.hn = 0
+        self.gn = 0
+        self.fn = 0
+        self.depth = 0
 
 
-def a_star_edh(problem):
-    # might change these functions
-    goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
+
+goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
+
+
+def ucs(puzzle):
+    return 0
+
+
+# misplaced tile heuristic, returns number of tiles in a position other than their designated goal state position
+def a_star_mth(puzzle):
+    misplaced_count = 0
+    for row in range(len(puzzle)):
+        for col in range(len(puzzle)):
+            if puzzle[row][col] != goal_state[row][col] and puzzle[row][col] != 0:
+                misplaced_count += 1
+    return misplaced_count
+
+
+# euclidean distance heuristic,
+def a_star_edh(puzzle):
+    distance = 0
+    puzzle_row = -1
+    puzzle_col = -1
+    goal_state_row = -1
+    goal_state_col = -1
+    for i in range(1, 9):
+        for row in range(len(puzzle)):
+            for col in range(len(puzzle)):
+                if puzzle[row][col] == i:
+                    puzzle_row = row
+                    puzzle_col = col
+                if goal_state[row][col] == i:
+                    goal_state_row = row
+                    goal_state_col = col
+        row_difference = puzzle_row - goal_state_row
+        col_difference = puzzle_col - goal_state_col
+        hypotenuse = math.sqrt(pow(row_difference + col_difference, 2))
+        distance += hypotenuse
+    return distance
 
 
 if __name__ == '__main__':

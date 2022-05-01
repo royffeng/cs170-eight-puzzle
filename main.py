@@ -1,22 +1,51 @@
 import os
 from copy import deepcopy
 from queue import PriorityQueue
+from queue import Queue
+from collections import deque
 import time
 import math
+
+goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
+# this queue keeps track of the operations taken to arrive at the final goal state
+operation_history = Queue()
 
 
 def main():
     # TODO: substitute environment variable for SID for final submission
+    custom_puzzle = get_puzzle_input_choice()
+    puzzle = get_puzzle_state(custom_puzzle)
+
+    print('\nHere is the puzzle:')
+    print(puzzle)
+    algo = get_heuristic_choice()
+    heuristic = get_heuristic(puzzle, algo)
+
+    start_time = time.time()
+    search(puzzle, heuristic, algo)
+    end_time = time.time()
+    print('Search took ', end_time - start_time, ' seconds')
+
+
+# gets user input for whether they would like to input their own custom puzzle or use a default
+def get_puzzle_input_choice():
     print('Welcome to ' + os.environ['ROY_SID'] + '\'s 8 puzzle solver')
     print('Type \"1\" to use a default puzzle, or \"2\" to enter your own puzzle.')
-    custom_puzzle = input()
+    return input()
+
+
+# if user chose custom puzzle, this parses input and returns puzzle
+# if default puzzle, this function enables me to easily return one of the many default puzzles that are hardcoded
+def get_puzzle_state(custom_puzzle):
     if custom_puzzle == '1':
         # puzzle should be a tuple of lists - tuple is ordered and immutable, but list is ordered and mutable
         # the rows should be immutable, but we should be allowed to modify the elements within each row
-        puzzle = ([1, 2, 0], [4, 5, 3], [7, 8, 6])
-        puzzle_1 = ([1, 2, 3], [4, 5, 6], [7, 0, 8])
-        puzzle_2 = ([0, 1, 2], [4, 5, 3], [7, 8, 6])
-        puzzle_3 = ([8, 7, 1], [6, 0, 2], [5, 4, 3])
+        puzzle_0 = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
+        # more puzzles to run:
+        puzzle_1 = ([1, 2, 0], [4, 5, 3], [7, 8, 6])
+        puzzle_2 = ([1, 2, 3], [4, 5, 6], [7, 0, 8])
+        puzzle_3 = ([0, 1, 2], [4, 5, 3], [7, 8, 6])
+        puzzle_4 = ([8, 7, 1], [6, 0, 2], [5, 4, 3])
     elif custom_puzzle == '2':
         print('Enter your puzzle, use a zero to represent the blank')
         print('Enter the first row, use a space between numbers')
@@ -25,32 +54,34 @@ def main():
         row_2 = input()
         print('Enter the third row, use a space between numbers')
         row_3 = input()
-        puzzle = (row_1.split(), row_2.split(), row_3.split())
+        puzzle_1 = (row_1.split(), row_2.split(), row_3.split())
     else:
         print('Invalid input. Using default puzzle.')
         puzzle = ([1, 2, 0], [4, 5, 3], [7, 8, 6])
+    return puzzle_4
 
-    print('\nHere is the puzzle:')
-    print(puzzle_3)
+
+# gets user input on which heuristic they would like to use
+def get_heuristic_choice():
     print('\nEnter the number of your choice of algorithm:')
     print('(1) Uniform Cost Search')
     print('(2) A* with the Misplaced Tile Heuristic')
     print('(3) A* with the Euclidean Distance Heuristic')
-    algo = input()
+    return input()
+
+
+# gets the heuristic value given the initial state of the puzzle and the user's heuristic function choice
+def get_heuristic(puzzle, algo):
     if algo == '1':
-        heuristic = ucs(puzzle_3)
+        heuristic = ucs(puzzle)
     elif algo == '2':
-        heuristic = a_star_mth(puzzle_3)
+        heuristic = a_star_mth(puzzle)
     elif algo == '3':
-        heuristic = a_star_edh(puzzle_3)
+        heuristic = a_star_edh(puzzle)
     else:
         print('Invalid input. Using A* with the Euclidean Distance Heuristic')
         heuristic = a_star_edh(puzzle)
-
-    start_time = time.time()
-    search(puzzle_3, heuristic, algo)
-    end_time = time.time()
-    print('Search took ', end_time - start_time, ' seconds')
+    return heuristic
 
 
 # pseudo code
@@ -68,13 +99,20 @@ function graphSearch(problem) returns a solution, or failure
 """
 
 
-# graph search inspired by above pseudo code
+# graph search inspired by above pseudocode
 def search(puzzle, heuristic, algo):
+    # frontier = []
     frontier = PriorityQueue()
     expanded = []
-    nodes_expanded = 0
+    # trivially set to -1 to reflect 0 nodes for the trivial case whereas the program must expand at least one node
+    # in order to check for solution / goal state
+    # e.g. decrementing or ignoring one node where the one node is the initial state
+    nodes_expanded = -1
     frontier_size = 0
-    max_frontier_size = 0
+    # trivially set to -1 to reflect 0 nodes for the trivial case whereas the program must expand at least one node
+    # in order to check for solution / goal state
+    # e.g. decrementing or ignoring one node where the one node is the initial state
+    max_frontier_size = -1
     node = Problem(puzzle)
     node.hn = heuristic
 
@@ -88,6 +126,7 @@ def search(puzzle, heuristic, algo):
             print('Search failed: empty frontier')
             return
         node = frontier.get()
+        operation_history.put(node.operation_name)
         frontier_size -= 1
         if not node.expanded:
             node.expanded = True
@@ -95,10 +134,15 @@ def search(puzzle, heuristic, algo):
 
         # check for goal state after a node has been removed from the frontier
         if node.puzzle == goal_state:
+            print('\nGoal!!!\n')
+            # popping the first item in the queue off because it is the initial state and there are no operations
+            operation_history.get()
+            while not operation_history.empty():
+                print('Operations taken to arrive at final puzzle state:', operation_history.get())
             print('\nGoal!!!\n\nTo solve this problem, the search algorithm expanded a total of ' +
                   str(nodes_expanded) + ' nodes.\nThe maximum number of nodes in the queue at any one time: ' +
                   str(max_frontier_size) + '.\nThe depth of the goal node was: ' + str(node.depth) + '.\n')
-            print('Final puzzle state: ', node.puzzle)
+            print('Final puzzle state: ', node.puzzle, '\n')
             return
 
         print('\nThe best state to expand with g(n) = ' + str(node.depth) + ' and h(n) = ' +
@@ -111,6 +155,7 @@ def search(puzzle, heuristic, algo):
         for child in children:
             if child is not None:
                 child.depth = node.depth + 1
+                # uniform cost search
                 if algo == '1':
                     child.hn = ucs(child.puzzle)
                 # misplaced tile heuristic
@@ -124,7 +169,7 @@ def search(puzzle, heuristic, algo):
                 frontier_size += 1
 
         if frontier_size > max_frontier_size:
-            frontier_size = max_frontier_size
+            max_frontier_size = frontier_size
 
 
 def expand_nodes(node, expanded):
@@ -138,6 +183,7 @@ def expand_nodes(node, expanded):
                 col_index = col
 
     if row_index > 0:
+        # up_child = copy(node.puzzle) # doesn't work, need deepcopy or else expanded [list] also changes
         up_child = deepcopy(node.puzzle)
         # swapping the 0 with the puzzle piece directly above it
         '''
@@ -149,6 +195,7 @@ def expand_nodes(node, expanded):
         up_child[row_index - 1][col_index] = 0
         if up_child not in expanded:
             node.move_up = Problem(up_child)
+            node.move_up.operation_name = 'move 0 (blank) tile up\n'
 
     if row_index < len(node.puzzle) - 1:
         down_child = deepcopy(node.puzzle)
@@ -162,7 +209,7 @@ def expand_nodes(node, expanded):
         down_child[row_index + 1][col_index] = 0
         if down_child not in expanded:
             node.move_down = Problem(down_child)
-
+            node.move_down.operation_name = 'move 0 (blank) tile down\n'
     if col_index > 0:
         left_child = deepcopy(node.puzzle)
         # swapping the 0 with the puzzle piece directly above it
@@ -175,6 +222,7 @@ def expand_nodes(node, expanded):
         left_child[row_index][col_index - 1] = 0
         if left_child not in expanded:
             node.move_left = Problem(left_child)
+            node.move_left.operation_name = 'move 0 (blank) tile to the left\n'
 
     if col_index < len(node.puzzle) - 1:
         right_child = deepcopy(node.puzzle)
@@ -188,6 +236,7 @@ def expand_nodes(node, expanded):
         right_child[row_index][col_index + 1] = 0
         if right_child not in expanded:
             node.move_right = Problem(right_child)
+            node.move_right.operation_name = 'move 0 (blank) tile to the right\n'
 
     return node
 
@@ -205,12 +254,15 @@ class Problem:
         self.gn = 0
         self.fn = 0
         self.depth = 0
+        self.operation_name = ''
+        # self.operation_history = deque()
 
+    # TypeError: '<' not supported between instances of 'Problem' and 'Problem'
+    # enables us to compare two Problem objects when get() from priority queue by comparing the heuristic values
+    # of each Problem object
+    # logic enables us to find the smallest hn and get/pop that Problem object from the priority queue
     def __lt__(self, other):
         return other.hn > self.hn
-
-
-goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
 
 
 def ucs(puzzle):
@@ -230,10 +282,10 @@ def a_star_mth(puzzle):
 # euclidean distance heuristic,
 def a_star_edh(puzzle):
     distance = 0
-    puzzle_row = -1
-    puzzle_col = -1
-    goal_state_row = -1
-    goal_state_col = -1
+    puzzle_row = 0
+    puzzle_col = 0
+    goal_state_row = 0
+    goal_state_col = 0
     for i in range(1, 9):
         for row in range(len(puzzle)):
             for col in range(len(puzzle)):
@@ -245,10 +297,19 @@ def a_star_edh(puzzle):
                     goal_state_col = col
         row_difference = puzzle_row - goal_state_row
         col_difference = puzzle_col - goal_state_col
-        hypotenuse = math.sqrt(pow(row_difference + col_difference, 2))
+        hypotenuse = math.sqrt(pow(row_difference, 2) + pow(col_difference, 2))
         distance += hypotenuse
     return distance
 
 
 if __name__ == '__main__':
     main()
+
+# resources used:
+# https://docs.python.org/3/library/queue.html
+# https://docs.python.org/3.5/library/asyncio-queue.html
+# https://docs.python.org/3/library/copy.html
+# https://linuxtut.com/en/441a6bf31175ec339050/
+# https://stackoverflow.com/questions/9292415/i-notice-i-cannot-use-priorityqueue-for-objects
+# https://stackoverflow.com/questions/28906047/python-priorityqueue-get-returns-int-instead-of-object
+# https://stackoverflow.com/questions/65874525/python-priorityqueue-how-to-get-the-data-element-instead-of-its-priority-numb

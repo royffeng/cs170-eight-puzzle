@@ -8,7 +8,7 @@ import math
 
 goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
 # this queue keeps track of the operations taken to arrive at the final goal state
-operation_history = Queue()
+# operation_history = Queue()
 
 
 def main():
@@ -46,6 +46,7 @@ def get_puzzle_state(custom_puzzle):
         puzzle_2 = ([1, 2, 3], [4, 5, 6], [7, 0, 8])
         puzzle_3 = ([0, 1, 2], [4, 5, 3], [7, 8, 6])
         puzzle_4 = ([8, 7, 1], [6, 0, 2], [5, 4, 3])
+        puzzle_5 = ([1, 0, 3], [4, 2, 6], [7, 5, 8])
     elif custom_puzzle == '2':
         print('Enter your puzzle, use a zero to represent the blank')
         print('Enter the first row, use a space between numbers')
@@ -58,7 +59,7 @@ def get_puzzle_state(custom_puzzle):
     else:
         print('Invalid input. Using default puzzle.')
         puzzle = ([1, 2, 0], [4, 5, 3], [7, 8, 6])
-    return puzzle_4
+    return puzzle_5
 
 
 # gets user input on which heuristic they would like to use
@@ -126,7 +127,7 @@ def search(puzzle, heuristic, algo):
             print('Search failed: empty frontier')
             return
         node = frontier.get()
-        operation_history.put(node.operation_name)
+        # operation_history.put(node.operation_name)
         frontier_size -= 1
         if not node.expanded:
             node.expanded = True
@@ -136,10 +137,10 @@ def search(puzzle, heuristic, algo):
         if node.puzzle == goal_state:
             print('\nGoal!!!\n')
             # popping the first item in the queue off because it is the initial state and there are no operations
-            operation_history.get()
-            while not operation_history.empty():
-                print('Operations taken to arrive at final puzzle state:', operation_history.get())
-            print('\nGoal!!!\n\nTo solve this problem, the search algorithm expanded a total of ' +
+            # operation_history.get()
+            while not len(node.operation_name) == 0:
+                print('Operations taken to arrive at final puzzle state:', node.operation_name.pop())
+            print('Goal!!!\n\nTo solve this problem, the search algorithm expanded a total of ' +
                   str(nodes_expanded) + ' nodes.\nThe maximum number of nodes in the queue at any one time: ' +
                   str(max_frontier_size) + '.\nThe depth of the goal node was: ' + str(node.depth) + '.\n')
             print('Final puzzle state: ', node.puzzle, '\n')
@@ -185,6 +186,7 @@ def expand_nodes(node, expanded):
     if row_index > 0:
         # up_child = copy(node.puzzle) # doesn't work, need deepcopy or else expanded [list] also changes
         up_child = deepcopy(node.puzzle)
+        new_list = node.operation_name.copy()
         # swapping the 0 with the puzzle piece directly above it
         '''
         swap = up_child[row_index][col_index]
@@ -195,10 +197,13 @@ def expand_nodes(node, expanded):
         up_child[row_index - 1][col_index] = 0
         if up_child not in expanded:
             node.move_up = Problem(up_child)
-            node.move_up.operation_name = 'move 0 (blank) tile up\n'
+            for element in new_list:
+                node.move_up.operation_name.append(element)
+            node.move_up.operation_name.append('move 0 (blank) tile up\n')
 
     if row_index < len(node.puzzle) - 1:
         down_child = deepcopy(node.puzzle)
+        new_list = node.operation_name.copy()
         # swapping the 0 with the puzzle piece directly above it
         '''
         swap = down_child[row_index][col_index]
@@ -209,9 +214,13 @@ def expand_nodes(node, expanded):
         down_child[row_index + 1][col_index] = 0
         if down_child not in expanded:
             node.move_down = Problem(down_child)
-            node.move_down.operation_name = 'move 0 (blank) tile down\n'
+            for element in new_list:
+                node.move_down.operation_name.append(element)
+            node.move_down.operation_name.append("move 0 (blank) tile down\n")
+
     if col_index > 0:
         left_child = deepcopy(node.puzzle)
+        new_list = node.operation_name.copy()
         # swapping the 0 with the puzzle piece directly above it
         '''
         swap = left_child[row_index][col_index]
@@ -222,10 +231,13 @@ def expand_nodes(node, expanded):
         left_child[row_index][col_index - 1] = 0
         if left_child not in expanded:
             node.move_left = Problem(left_child)
-            node.move_left.operation_name = 'move 0 (blank) tile to the left\n'
+            for element in new_list:
+                node.move_left.operation_name.append(element)
+            node.move_left.operation_name.append("move 0 (blank) tile left\n")
 
     if col_index < len(node.puzzle) - 1:
         right_child = deepcopy(node.puzzle)
+        new_list = node.operation_name.copy()
         # swapping the 0 with the puzzle piece directly above it
         '''
         swap = right_child[row_index][col_index]
@@ -236,7 +248,9 @@ def expand_nodes(node, expanded):
         right_child[row_index][col_index + 1] = 0
         if right_child not in expanded:
             node.move_right = Problem(right_child)
-            node.move_right.operation_name = 'move 0 (blank) tile to the right\n'
+            for element in new_list:
+                node.move_right.operation_name.append(element)
+            node.move_right.operation_name.append("move 0 (blank) tile right\n")
 
     return node
 
@@ -254,7 +268,7 @@ class Problem:
         self.gn = 0
         self.fn = 0
         self.depth = 0
-        self.operation_name = ''
+        self.operation_name = []
         # self.operation_history = deque()
 
     # TypeError: '<' not supported between instances of 'Problem' and 'Problem'
@@ -262,7 +276,7 @@ class Problem:
     # of each Problem object
     # logic enables us to find the smallest hn and get/pop that Problem object from the priority queue
     def __lt__(self, other):
-        return other.hn > self.hn
+        return other.hn + other.depth > self.hn + self.depth
 
 
 def ucs(puzzle):
@@ -313,3 +327,4 @@ if __name__ == '__main__':
 # https://stackoverflow.com/questions/9292415/i-notice-i-cannot-use-priorityqueue-for-objects
 # https://stackoverflow.com/questions/28906047/python-priorityqueue-get-returns-int-instead-of-object
 # https://stackoverflow.com/questions/65874525/python-priorityqueue-how-to-get-the-data-element-instead-of-its-priority-numb
+# https://stackoverflow.com/questions/2612802/how-do-i-clone-a-list-so-that-it-doesnt-change-unexpectedly-after-assignment

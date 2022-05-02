@@ -1,18 +1,13 @@
 import os
 from copy import deepcopy
 from queue import PriorityQueue
-from queue import Queue
-from collections import deque
 import time
 import math
 
 goal_state = ([1, 2, 3], [4, 5, 6], [7, 8, 0])
-# this queue keeps track of the operations taken to arrive at the final goal state
-# operation_history = Queue()
 
 
 def main():
-    # TODO: substitute environment variable for SID for final submission
     custom_puzzle = get_puzzle_input_choice()
     puzzle = get_puzzle_state(custom_puzzle)
 
@@ -29,7 +24,7 @@ def main():
 
 # gets user input for whether they would like to input their own custom puzzle or use a default
 def get_puzzle_input_choice():
-    print('Welcome to ' + os.environ['ROY_SID'] + '\'s 8 puzzle solver')
+    print('Welcome to ', os.environ['ROY_SID'], '\'s 8 puzzle solver')
     print('Type \"1\" to use a default puzzle, or \"2\" to enter your own puzzle.')
     return input()
 
@@ -47,6 +42,7 @@ def get_puzzle_state(custom_puzzle):
         puzzle_3 = ([0, 1, 2], [4, 5, 3], [7, 8, 6])
         puzzle_4 = ([8, 7, 1], [6, 0, 2], [5, 4, 3])
         puzzle_5 = ([1, 0, 3], [4, 2, 6], [7, 5, 8])
+        return puzzle_0
     elif custom_puzzle == '2':
         print('Enter your puzzle, use a zero to represent the blank')
         print('Enter the first row, use a space between numbers')
@@ -55,11 +51,15 @@ def get_puzzle_state(custom_puzzle):
         row_2 = input()
         print('Enter the third row, use a space between numbers')
         row_3 = input()
-        puzzle_1 = (row_1.split(), row_2.split(), row_3.split())
+        puzzle = (row_1.split(' '), row_2.split(' '), row_3.split(' '))
+        for row in range(len(puzzle)):
+            for element in range(len(puzzle[row])):
+                puzzle[row][element] = int(puzzle[row][element])
+        return puzzle
     else:
         print('Invalid input. Using default puzzle.')
         puzzle = ([1, 2, 0], [4, 5, 3], [7, 8, 6])
-    return puzzle_5
+        return puzzle
 
 
 # gets user input on which heuristic they would like to use
@@ -102,7 +102,6 @@ function graphSearch(problem) returns a solution, or failure
 
 # graph search inspired by above pseudocode
 def search(puzzle, heuristic, algo):
-    # frontier = []
     frontier = PriorityQueue()
     expanded = []
     # trivially set to -1 to reflect 0 nodes for the trivial case whereas the program must expand at least one node
@@ -127,7 +126,6 @@ def search(puzzle, heuristic, algo):
             print('Search failed: empty frontier')
             return
         node = frontier.get()
-        # operation_history.put(node.operation_name)
         frontier_size -= 1
         if not node.expanded:
             node.expanded = True
@@ -136,8 +134,6 @@ def search(puzzle, heuristic, algo):
         # check for goal state after a node has been removed from the frontier
         if node.puzzle == goal_state:
             print('\nGoal!!!\n')
-            # popping the first item in the queue off because it is the initial state and there are no operations
-            # operation_history.get()
             while not len(node.operation_name) == 0:
                 print('Operations taken to arrive at final puzzle state:', node.operation_name.pop())
             print('Goal!!!\n\nTo solve this problem, the search algorithm expanded a total of ' +
@@ -184,7 +180,6 @@ def expand_nodes(node, expanded):
                 col_index = col
 
     if row_index > 0:
-        # up_child = copy(node.puzzle) # doesn't work, need deepcopy or else expanded [list] also changes
         up_child = deepcopy(node.puzzle)
         new_list = node.operation_name.copy()
         # swapping the 0 with the puzzle piece directly above it
@@ -204,7 +199,6 @@ def expand_nodes(node, expanded):
     if row_index < len(node.puzzle) - 1:
         down_child = deepcopy(node.puzzle)
         new_list = node.operation_name.copy()
-        # swapping the 0 with the puzzle piece directly above it
         '''
         swap = down_child[row_index][col_index]
         down_child[row_index][col_index] = down_child[row_index + 1][col_index]
@@ -221,7 +215,6 @@ def expand_nodes(node, expanded):
     if col_index > 0:
         left_child = deepcopy(node.puzzle)
         new_list = node.operation_name.copy()
-        # swapping the 0 with the puzzle piece directly above it
         '''
         swap = left_child[row_index][col_index]
         left_child[row_index][col_index] = left_child[row_index][col_index - 1]
@@ -238,7 +231,6 @@ def expand_nodes(node, expanded):
     if col_index < len(node.puzzle) - 1:
         right_child = deepcopy(node.puzzle)
         new_list = node.operation_name.copy()
-        # swapping the 0 with the puzzle piece directly above it
         '''
         swap = right_child[row_index][col_index]
         right_child[row_index][col_index] = right_child[row_index][col_index + 1]
